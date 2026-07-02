@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.config/
+browser_profile/
+last_url.txt
+.pytest_cache/
+.DS_Store
