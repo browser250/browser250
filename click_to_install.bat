@@ -26,4 +26,22 @@ exit
 echo Cycling Browser 250 Desktop Window...
 docker compose -f docker-compose-windows.yml down 2>nul
 docker compose -f docker-compose-windows.yml up -d
+
+echo Diagnostics: Verifying container runtime stability...
+timeout /t 3 /nobreak >nul
+
+docker ps --filter "name=clean_browser" --filter "status=running" | findstr "clean_browser" >nul
+if %errorlevel% neq 0 (
+    echo.
+    echo ====================================================
+    echo   [CRITICAL ERROR] Browser container crashed on boot!
+    echo   Dumping container error logs below:
+    echo ====================================================
+    echo.
+    docker logs clean_browser
+    echo.
+    echo ====================================================
+    pause
+    exit
+)
 exit
