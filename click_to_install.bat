@@ -4,9 +4,9 @@ cd /d "%~dp0"
 :: Enforce Administrative Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo Requesting administrative privileges to manage Docker subsystems...
+    echo Requesting administrative privileges...
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process '%~f0' -ArgumentList '%1' -Verb RunAs"
-    exit /b
+    exit
 )
 
 if "%1"=="run" goto launch
@@ -16,25 +16,16 @@ echo   Validating Docker Engine Environment...
 echo ====================================================
 echo.
 
-:: Check if Docker CLI is installed
 where docker >nul 2>&1
 if %errorlevel% neq 0 (
     if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" goto start_docker
-    
     echo [NOTICE] Docker Desktop was not found on this system.
     echo Downloading and deploying Docker Desktop cleanly via Winget...
-    echo Please wait, this process takes a few minutes...
-    echo.
-    
     winget install --id Docker.DockerDesktop --silent --accept-source-agreements --accept-package-agreements
-    if %errorlevel% neq 0 (
-        echo [CRITICAL ERROR] Automated installation failed. Please install Docker Desktop manually.
-        pause
-        exit /b
-    )
-    echo Installation complete. Refreshing environment variables...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
+    echo.
+    echo Installation triggered. Please run this batch file again once installation finishes.
+    pause
+    exit
 )
 
 :check_running
@@ -48,23 +39,18 @@ if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" (
 ) else (
     echo [ERROR] Cannot locate Docker Desktop executable path. Launch it manually.
     pause
-    exit /b
+    exit
 )
 
-echo Waiting for Docker Daemon virtualization layer to turn green...
 set count=0
-:loop
+:install_loop
 timeout /t 5 /nobreak >nul
 docker info >nul 2>&1
-if %errorlevel% neq 0 (
-    set /a count+=1
-    if %count% geq 36 (
-        echo [ERROR] Docker Engine timed out during initialization. Check WSL2 status.
-        pause
-        exit /b
-    )
-    goto loop
-)
+if %errorlevel% eq 0 goto docker_ready
+set /a count+=1
+echo Waiting for Docker Daemon to turn green... (%count%/30)
+if %count% gtr 30 goto docker_timeout
+goto install_loop
 
 :docker_ready
 echo Docker Daemon is verified active and running. Proceeding to deploy application...
@@ -84,30 +70,47 @@ echo ====================================================
 pause
 exit
 
+:docker_timeout
+echo [ERROR] Docker Engine timed out during initialization. Open Docker Desktop manually.
+pause
+exit
+
 :launch
-:: Ensure engine is alive when desktop shortcut is triggered
+set count=0
+:launch_check
 docker info >nul 2>&1
-if %errorlevel% neq 0 (
+if %errorlevel% eq 0 goto launch_container
+
+if %count% eq 0 (
     echo Docker is closed. Waking up Docker Engine before drawing desktop window...
     if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" (
         start "" "%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
     )
-    set count=0
-    :launch_loop
-    timeout /t 5 /nobreak >nul
-    docker info >nul 2>&1
-    if %errorlevel% neq 0 (
-        set /a count+=1
-        if %count% geq 36 (
-            echo [ERROR] Failed to wake up Docker Engine.
-            pause
-            exit
-        )
-        goto launch_loop
-    )
 )
 
+timeout /t 5 /nobreak >nul
+set /a count+=1
+echo Waiting for Engine synchronization... (%count%/30)
+if %count% gtr 30 goto docker_timeout
+goto launch_check
+
+:launch_container
 echo Cycling Browser 250 Desktop Window...
 docker compose -f docker-compose-windows.yml down 2>nul
 docker compose -f docker-compose-windows.yml up -d
+
+timeout /t 3 /nobreak >nul
+docker ps --filter "name=clean_browser" --filter "status=running" | findstr "clean_browser" >nul
+if %errorlevel% neq 0 (
+    echo.
+    echo ====================================================
+    echo   [CRITICAL ERROR] Browser container crashed on boot!
+    echo   Dumping container error logs below:
+    echo ====================================================
+    echo.
+    docker logs clean_browser
+    echo.
+    echo ====================================================
+    pause
+)
 exit
