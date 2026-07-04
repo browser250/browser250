@@ -1,15 +1,16 @@
 @echo off
-:: Windows Double-Click Launcher for Browser 250
-:: Forces administrative elevation and bypasses execution policies automatically
+:: Browser 250 - Automated Windows Double-Click Launcher
+cd /d "%~dp0"
 
-:: Check for administrative rights
-net session >nul 2>&1
-if %errorLevel% == 0 (
-    echo Administrative privileges verified. Launching installation engine...
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install_windows.ps1"
-) else (
-    echo Requesting Administrator Elevation...
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
-)
+echo ====================================================
+echo   Launching Browser 250 Windows Deployment Layer...
+echo ====================================================
+echo.
+
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
+
+echo.
+echo ====================================================
+echo   Execution complete. You can now close this window.
+echo ====================================================
 pause
