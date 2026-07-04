@@ -1,14 +1,6 @@
 @echo off
 cd /d "%~dp0"
 
-:: Enforce Administrative Privileges
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Requesting administrative privileges...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process '%~f0' -ArgumentList '%1' -Verb RunAs"
-    exit
-)
-
 if "%1"=="run" goto launch
 
 echo ====================================================
@@ -16,17 +8,26 @@ echo   Validating Docker Engine Environment...
 echo ====================================================
 echo.
 
+:: Check if Docker CLI is available in user space
 where docker >nul 2>&1
 if %errorlevel% neq 0 (
     if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" goto start_docker
-    echo [NOTICE] Docker Desktop was not found on this system.
-    echo Downloading and deploying Docker Desktop cleanly via Winget...
-    winget install --id Docker.DockerDesktop --silent --accept-source-agreements --accept-package-agreements
-    echo.
-    echo Installation triggered. Please run this batch file again once installation finishes.
-    pause
+    
+    echo [NOTICE] Docker Desktop was not found. Requesting elevation for install...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process '%~f0' -ArgumentList 'install' -Verb RunAs"
     exit
 )
+
+if "%1"=="install" goto perform_install
+goto check_running
+
+:perform_install
+echo Downloading and deploying Docker Desktop cleanly via Winget...
+winget install --id Docker.DockerDesktop --silent --accept-source-agreements --accept-package-agreements
+echo.
+echo Installation triggered. Please run this batch file normally once completed.
+pause
+exit
 
 :check_running
 docker info >nul 2>&1
@@ -48,7 +49,7 @@ timeout /t 5 /nobreak >nul
 docker info >nul 2>&1
 if %errorlevel% eq 0 goto docker_ready
 set /a count+=1
-echo Waiting for Docker Daemon to turn green... (%count%/30)
+echo Waiting for User Docker Daemon to turn green... (%count%/30)
 if %count% gtr 30 goto docker_timeout
 goto install_loop
 
@@ -90,7 +91,7 @@ if %count% eq 0 (
 
 timeout /t 5 /nobreak >nul
 set /a count+=1
-echo Waiting for Engine synchronization... (%count%/30)
+echo Waiting for User Engine synchronization... (%count%/30)
 if %count% gtr 30 goto docker_timeout
 goto launch_check
 
