@@ -1,0 +1,27 @@
+services:
+  clean_browser:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clean_browser
+    image: clean_browser:latest
+    network_mode: "host"
+    ipc: host
+    shm_size: "2gb"
+    user: "1000:1000"
+    security_opt:
+      - seccomp=unconfined
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      - DISPLAY=${DISPLAY}
+      - XAUTHORITY=/tmp/.Xauthority
+      - HOME=/tmp
+      - QT_X11_NO_MITSHM=1
+      - QT_QUICK_BACKEND=software
+      - 'QT_WEBENGINE_CHROMIUM_FLAGS=--disable-gpu --disable-gpu-compositing --disable-gpu-rasterization --use-gl=swiftshader --disable-dev-shm-usage --disable-blink-features=AutomationControlled --lang=en-US --user-agent=Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ${XAUTHORITY:-~/.Xauthority}:/tmp/.Xauthority:ro
+      - ~/.config/clean_browser:/tmp/.config/clean_browser
+    restart: unless-stopped
