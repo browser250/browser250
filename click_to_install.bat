@@ -8,9 +8,9 @@ echo   Installing Browser 250 for Windows (WSLg Mode)...
 echo ====================================================
 echo.
 
-:: Execute via the WSL layer to bind display sockets natively
-wsl docker compose -f docker-compose-windows.yml down --volumes --remove-orphans 2>nul
-wsl docker compose -f docker-compose-windows.yml up -d --build
+:: Execute natively via Windows command layer to avoid distribution blocks
+docker compose -f docker-compose-windows.yml down --volumes --remove-orphans 2>nul
+docker compose -f docker-compose-windows.yml up -d --build
 
 echo.
 echo Generating Native Windows Desktop Shortcut...
@@ -25,13 +25,13 @@ exit
 
 :launch
 echo Cycling Browser 250 Desktop Window...
-wsl docker compose -f docker-compose-windows.yml down 2>nul
-wsl docker compose -f docker-compose-windows.yml up -d
+docker compose -f docker-compose-windows.yml down 2>nul
+docker compose -f docker-compose-windows.yml up -d
 
 echo Diagnostics: Verifying container runtime stability...
 timeout /t 3 /nobreak >nul
 
-wsl docker ps --filter "name=clean_browser" --filter "status=running" | findstr "clean_browser" >nul
+docker ps --filter "name=clean_browser" --filter "status=running" | findstr "clean_browser" >nul
 if %errorlevel% neq 0 (
     echo.
     echo ====================================================
@@ -39,7 +39,7 @@ if %errorlevel% neq 0 (
     echo   Dumping container error logs below:
     echo ====================================================
     echo.
-    wsl docker logs clean_browser
+    docker logs clean_browser
     echo.
     echo ====================================================
     pause
