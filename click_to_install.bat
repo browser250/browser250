@@ -1,15 +1,29 @@
 @echo off
-:: Windows Double-Click Launcher for Browser 250
-:: Forces administrative elevation and bypasses execution policies automatically
+cd /d "%~dp0"
 
-:: Check for administrative rights
-net session >nul 2>&1
-if %errorLevel% == 0 (
-    echo Administrative privileges verified. Launching installation engine...
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install_windows.ps1"
-) else (
-    echo Requesting Administrator Elevation...
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
-)
+if "%1"=="run" goto launch
+
+echo ====================================================
+echo   Installing Browser 250 for Windows (WSLg Mode)...
+echo ====================================================
+echo.
+
+docker compose -f docker-compose-windows.yml down --volumes --remove-orphans 2>nul
+docker compose -f docker-compose-windows.yml up -d --build
+
+echo.
+echo Generating Native Windows Desktop Shortcut...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'Browser 250.lnk')); $s.TargetPath = '%~f0'; $s.Arguments = 'run'; $s.IconLocation = 'shell32.dll,220'; $s.Save()"
+
+echo.
+echo ====================================================
+echo   Setup Complete! Use the 'Browser 250' Desktop Icon.
+echo ====================================================
 pause
+exit
+
+:launch
+echo Cycling Browser 250 Desktop Window...
+docker compose -f docker-compose-windows.yml down 2>nul
+docker compose -f docker-compose-windows.yml up -d
+exit
