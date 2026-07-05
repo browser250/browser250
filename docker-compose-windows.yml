@@ -22,29 +22,11 @@ services:
       - QT_QUICK_BACKEND=software
       - 'QT_WEBENGINE_CHROMIUM_FLAGS=--disable-gpu --disable-gpu-compositing --disable-gpu-rasterization --use-gl=swiftshader --disable-dev-shm-usage --disable-blink-features=AutomationControlled --lang=en-US'
     volumes:
-      - x11_socket:/tmp/.X11-unix:ro
-      - wslg_dir:/mnt/wslg:ro
-      - runtime_dir:/runtime:ro
+      - //wsl.localhost/wslg/tmp/.X11-unix:/tmp/.X11-unix:ro
+      - //wsl.localhost/wslg/mnt/wslg:/mnt/wslg:ro
+      - //wsl.localhost/wslg/runtime-dir:/runtime:ro
       - browser_250_windows_profile:/tmp/.config/clean_browser
     restart: unless-stopped
 
 volumes:
   browser_250_windows_profile:
-  x11_socket:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /tmp/.X11-unix
-  wslg_dir:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/wslg
-  runtime_dir:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/wslg/runtime-dir

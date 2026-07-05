@@ -8,7 +8,6 @@ echo   Installing Browser 250 for Windows (WSLg Mode)...
 echo ====================================================
 echo.
 
-:: Execute natively via Windows command layer to avoid distribution blocks
 docker compose -f docker-compose-windows.yml down --volumes --remove-orphans 2>nul
 docker compose -f docker-compose-windows.yml up -d --build
 
